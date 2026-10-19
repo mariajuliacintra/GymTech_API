@@ -19,6 +19,8 @@ from app.core.exceptions import NaoAutenticadoError
 
 # Valores do campo "tipo" dentro do token (quem está logado).
 TIPO_TOKEN_ACADEMIA = "academia"
+TIPO_TOKEN_ALUNO = "Aluno"  # igual ao usuario.tipo_perfil
+TIPO_TOKEN_PROFISSIONAL = "Profissional"  # igual ao usuario.tipo_perfil
 
 
 # ------------------------------------------------------------------ senha

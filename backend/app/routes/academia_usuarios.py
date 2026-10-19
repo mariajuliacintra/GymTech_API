@@ -9,6 +9,8 @@ from app.schemas.usuario import (
     AlunoResponse,
     ProfissionalCreate,
     ProfissionalResponse,
+    AlunoCadastroResponse,
+    ProfissionalCadastroResponse
 )
 from app.services import usuario_service
 
@@ -19,9 +21,10 @@ router = APIRouter(tags=["Cadastro de usuários"])
 
 @router.post(
     "/alunos",
-    response_model=AlunoResponse,
+    response_model= AlunoCadastroResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Cadastrar aluno",
+    
 )
 def cadastrar_aluno(
     dados: AlunoCreate,
@@ -35,7 +38,7 @@ def cadastrar_aluno(
 
 @router.post(
     "/profissionais",
-    response_model=ProfissionalResponse,
+    response_model= ProfissionalCadastroResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Cadastrar profissional",
 )

@@ -32,6 +32,10 @@ class Settings:
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
+    # Limite de tentativas de login erradas (vale para academia, aluno e profissional).
+    LOGIN_MAX_TENTATIVAS: int = int(os.getenv("LOGIN_MAX_TENTATIVAS", "5"))
+    LOGIN_BLOQUEIO_MINUTOS: int = int(os.getenv("LOGIN_BLOQUEIO_MINUTOS", "15"))
+
 
 settings = Settings()
 

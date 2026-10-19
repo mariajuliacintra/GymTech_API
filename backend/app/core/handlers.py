@@ -6,6 +6,7 @@ from app.core.exceptions import (
     NaoAutenticadoError,
     NaoAutorizadoError,
     NaoEncontradoError,
+    TentativasExcedidasError,
 )
 
 
@@ -31,3 +32,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ConflitoError)
     async def conflito_handler(request: Request, exc: ConflitoError):
         return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+    @app.exception_handler(TentativasExcedidasError)
+    async def tentativas_excedidas_handler(request: Request, exc: TentativasExcedidasError):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": str(exc)},
+            headers={"Retry-After": str(exc.segundos_restantes)},
+        )

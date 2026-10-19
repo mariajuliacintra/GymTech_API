@@ -43,3 +43,6 @@ class AcademiaResponse(BaseModel):
     nome_academia: str
     email_corporativo: str
     cnpj: str
+
+class AcademiaCadastroResponse(AcademiaResponse):
+    mensagem: str = "Academia cadastrada com sucesso!"

@@ -116,3 +116,10 @@ class ProfissionalResponse(UsuarioResponse):
             especialidade=usuario.profissional.especialidade,
             registro_profissional=usuario.profissional.registro_profissional,
         )
+
+class AlunoCadastroResponse(AlunoResponse):
+    mensagem: str = "Aluno cadastrado com sucesso!"
+
+
+class ProfissionalCadastroResponse(ProfissionalResponse):
+    mensagem: str = "Profissional cadastrado com sucesso!"
