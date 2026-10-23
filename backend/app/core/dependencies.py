@@ -10,9 +10,10 @@ Exemplo:
     def minha_rota(aluno: Aluno = Depends(get_aluno_atual)): ...
 Se não houver token válido do tipo certo, a rota nem chega a ser executada.
 """
+from dataclasses import dataclass
 from typing import Optional
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -93,3 +94,17 @@ def get_profissional_atual(usuario: Usuario = Depends(get_usuario_atual)) -> Pro
     if usuario.tipo_perfil != TIPO_TOKEN_PROFISSIONAL or usuario.profissional is None:
         raise NaoAutorizadoError("Este recurso é exclusivo de profissionais.")
     return usuario.profissional
+
+
+@dataclass
+class Paginacao:
+    limit: int
+    offset: int
+
+
+def get_paginacao(
+    limit: int = Query(100, ge=1, le=500, description="Itens por página"),
+    offset: int = Query(0, ge=0, description="Quantos itens pular"),
+) -> Paginacao:
+    """Usada nas listagens: ?limit=50&offset=100 devolve do 101º ao 150º item."""
+    return Paginacao(limit=limit, offset=offset)

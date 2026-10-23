@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -34,3 +34,15 @@ def cadastrar_academia(db: Session, dados: AcademiaCreate) -> Academia:
         ) from exc
     db.refresh(academia)
     return academia
+
+
+def listar_academias(db: Session, limit: int = 100, offset: int = 0) -> tuple[list[Academia], int]:
+    """Devolve (página_de_academias, total)."""
+    total = db.scalar(select(func.count()).select_from(Academia)) or 0
+    academias = db.scalars(
+        select(Academia)
+        .order_by(Academia.nome_academia, Academia.id_academia)
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return list(academias), total

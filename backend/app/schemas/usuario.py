@@ -5,7 +5,7 @@ Schemas do cadastro de usuários.
 *Response -> o que a API DEVOLVE (nunca contém a senha).
 """
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -68,7 +68,6 @@ class AlunoCreate(UsuarioCreate):
     modalidade_treino: Optional[str] = Field(default=None, max_length=50)
     objetivo: Optional[str] = Field(default=None, max_length=150)
 
-
 class ProfissionalCreate(UsuarioCreate):
     especialidade: Optional[str] = Field(default=None, max_length=100)
     registro_profissional: str = Field(min_length=1, max_length=50)
@@ -123,3 +122,61 @@ class AlunoCadastroResponse(AlunoResponse):
 
 class ProfissionalCadastroResponse(ProfissionalResponse):
     mensagem: str = "Profissional cadastrado com sucesso!"
+
+
+class UsuarioMeResponse(UsuarioResponse):
+    mensagem: str = "Dados do usuário carregados com sucesso!"
+
+
+# ------------------------------------------------- saída: inativação (delete)
+class UsuarioInativadoResponse(BaseModel):
+    """
+    Resposta da "deleção" (inativação) de aluno/profissional.
+
+    `cancelamentos` mostra o que foi cancelado em cascata nas outras tabelas
+    ligadas ao usuário, ex.: {"agendamentos cancelados": 3}. Fica vazio
+    enquanto nenhuma tabela ligada ao usuário tiver sido criada.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id_usuario: int
+    nome: str
+    tipo_perfil: str
+    status: str
+    cancelamentos: dict[str, int] = Field(default_factory=dict)
+    mensagem: str
+
+
+class AlunoDeleteResponse(UsuarioInativadoResponse):
+    mensagem: str = "Aluno inativado com sucesso!"
+
+
+class ProfissionalDeleteResponse(UsuarioInativadoResponse):
+    mensagem: str = "Profissional inativado com sucesso!"
+
+
+# --------------------------------------------------------- saída: listagens
+def usuario_para_response(usuario) -> Union[AlunoResponse, ProfissionalResponse]:
+    """Escolhe o schema certo (aluno ou profissional) conforme o tipo_perfil."""
+    if usuario.tipo_perfil == "Aluno":
+        return AlunoResponse.from_usuario(usuario)
+    return ProfissionalResponse.from_usuario(usuario)
+
+
+class AlunoListaResponse(BaseModel):
+    mensagem: str = "Alunos listados com sucesso!"
+    total: int  # total que bate com o filtro (não só desta página)
+    itens: list[AlunoResponse]
+
+
+class ProfissionalListaResponse(BaseModel):
+    mensagem: str = "Profissionais listados com sucesso!"
+    total: int
+    itens: list[ProfissionalResponse]
+
+
+class UsuarioListaResponse(BaseModel):
+    mensagem: str = "Usuários listados com sucesso!"
+    total: int
+    itens: list[Union[AlunoResponse, ProfissionalResponse]]

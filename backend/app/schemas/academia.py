@@ -44,5 +44,25 @@ class AcademiaResponse(BaseModel):
     email_corporativo: str
     cnpj: str
 
+
 class AcademiaCadastroResponse(AcademiaResponse):
     mensagem: str = "Academia cadastrada com sucesso!"
+
+
+class AcademiaMeResponse(AcademiaResponse):
+    mensagem: str = "Dados da academia carregados com sucesso!"
+
+
+class AcademiaResumoResponse(BaseModel):
+    """Versão pública: sem e-mail corporativo nem CNPJ."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id_academia: int
+    nome_academia: str
+
+
+class AcademiaListaResponse(BaseModel):
+    mensagem: str = "Academias listadas com sucesso!"
+    total: int
+    itens: list[AcademiaResumoResponse]
