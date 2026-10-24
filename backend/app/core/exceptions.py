@@ -38,3 +38,24 @@ class TentativasExcedidasError(NegocioError):
             "Muitas tentativas incorretas. Acesso bloqueado temporariamente. "
             f"Tente novamente em {minutos} {plural}."
         )
+
+
+class VerificacaoInvalidaError(NegocioError):
+    """Código/token de verificação inválido, expirado ou esgotado (vira HTTP 400)."""
+
+    def __init__(self, mensagem: str = "Verificação inválida ou expirada. Solicite um novo código."):
+        super().__init__(mensagem)
+
+
+class ReenvioDeCodigoError(NegocioError):
+    """Pediu um novo código cedo demais (vira HTTP 429)."""
+
+    def __init__(self, segundos_restantes: int):
+        self.segundos_restantes = max(1, int(segundos_restantes))
+        super().__init__(
+            f"Aguarde {self.segundos_restantes} segundos para solicitar um novo código."
+        )
+
+
+class ServicoIndisponivelError(NegocioError):
+    """Serviço externo (e-mail) fora do ar ou não configurado (vira HTTP 503)."""

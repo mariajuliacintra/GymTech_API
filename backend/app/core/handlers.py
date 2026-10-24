@@ -6,7 +6,10 @@ from app.core.exceptions import (
     NaoAutenticadoError,
     NaoAutorizadoError,
     NaoEncontradoError,
+    ReenvioDeCodigoError,
+    ServicoIndisponivelError,
     TentativasExcedidasError,
+    VerificacaoInvalidaError,
 )
 
 
@@ -40,3 +43,19 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={"detail": str(exc)},
             headers={"Retry-After": str(exc.segundos_restantes)},
         )
+
+    @app.exception_handler(VerificacaoInvalidaError)
+    async def verificacao_invalida_handler(request: Request, exc: VerificacaoInvalidaError):
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(ReenvioDeCodigoError)
+    async def reenvio_handler(request: Request, exc: ReenvioDeCodigoError):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": str(exc)},
+            headers={"Retry-After": str(exc.segundos_restantes)},
+        )
+
+    @app.exception_handler(ServicoIndisponivelError)
+    async def servico_indisponivel_handler(request: Request, exc: ServicoIndisponivelError):
+        return JSONResponse(status_code=503, content={"detail": str(exc)})

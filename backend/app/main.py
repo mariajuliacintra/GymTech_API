@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from app import models  # noqa: F401  (registra todas as tabelas)
 from app.core.config import settings
 from app.core.handlers import register_exception_handlers
-from app.routes import academia_usuarios, academias, auth, health, usuarios
+from app.routes import academia_usuarios, academias, auth, health, meu_perfil, usuarios
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -23,3 +23,4 @@ app.include_router(auth.router)
 app.include_router(academias.router)
 app.include_router(academia_usuarios.router)
 app.include_router(usuarios.router)
+app.include_router(meu_perfil.router)

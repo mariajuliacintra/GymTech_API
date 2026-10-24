@@ -25,7 +25,14 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.exceptions import ConflitoError, NaoEncontradoError
 from app.core.security import gerar_hash_senha
 from app.models import Academia, Aluno, Profissional, Usuario
-from app.schemas.usuario import AlunoCreate, ProfissionalCreate, UsuarioCreate
+from app.schemas.usuario import (
+    AlunoCreate,
+    AlunoUpdate,
+    ProfissionalCreate,
+    ProfissionalUpdate,
+    UsuarioCreate,
+)
+from app.services import verificacao_service
 from app.services.cascata_service import cancelar_vinculos
 
 
@@ -268,3 +275,49 @@ def listar_usuarios(
         .offset(offset)
     ).all()
     return list(usuarios), total
+
+
+# ------------------------------------------------------- atualizar os próprios dados
+def _atualizar(
+    db: Session, usuario: Usuario, dados: AlunoUpdate | ProfissionalUpdate
+) -> Usuario:
+    """
+    Atualização feita pelo PRÓPRIO usuário (quem é vem do token, nunca de um id
+    na URL: ninguém altera os dados de outra pessoa). Só vale se ele provar,
+    agora, que é mesmo ele (código enviado ao e-mail cadastrado).
+    """
+    conta = verificacao_service.conta_de_usuario(usuario)
+    prova = dados.verificacao
+
+    # Primeiro a prova de identidade; só então qualquer outra checagem
+    # (assim ninguém sem prova consegue sondar e-mails já cadastrados).
+    verificacao_service.conferir_prova(conta, verificacao_service.FINALIDADE_ATUALIZAR_DADOS, prova)
+
+    campos = dados.model_dump(exclude_unset=True, exclude={"verificacao"})
+
+    if "email" in campos and campos["email"] != usuario.email:
+        _checar_email_livre(db, campos["email"], ignorar_id=usuario.id_usuario)
+    if "registro_profissional" in campos:
+        _checar_registro_profissional(
+            db, campos["registro_profissional"], ignorar_id=usuario.id_usuario
+        )
+
+    for campo in ("nome", "email", "telefone", "data_nascimento"):
+        if campo in campos:
+            setattr(usuario, campo, campos[campo])
+    alvo = usuario.aluno if usuario.tipo_perfil == "Aluno" else usuario.profissional
+    for campo in ("modalidade_treino", "objetivo", "especialidade", "registro_profissional"):
+        if campo in campos:
+            setattr(alvo, campo, campos[campo])
+
+    _salvar(db, usuario)  # commit; conflito de último segundo vira 409
+    verificacao_service.consumir_prova(conta, verificacao_service.FINALIDADE_ATUALIZAR_DADOS, prova)
+    return usuario
+
+
+def atualizar_aluno(db: Session, usuario: Usuario, dados: AlunoUpdate) -> Usuario:
+    return _atualizar(db, usuario, dados)
+
+
+def atualizar_profissional(db: Session, usuario: Usuario, dados: ProfissionalUpdate) -> Usuario:
+    return _atualizar(db, usuario, dados)

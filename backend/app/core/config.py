@@ -36,6 +36,20 @@ class Settings:
     LOGIN_MAX_TENTATIVAS: int = int(os.getenv("LOGIN_MAX_TENTATIVAS", "5"))
     LOGIN_BLOQUEIO_MINUTOS: int = int(os.getenv("LOGIN_BLOQUEIO_MINUTOS", "15"))
 
+    # Códigos de verificação enviados por e-mail (esqueci a senha / confirmar alterações).
+    CODIGO_TTL_MINUTOS: int = int(os.getenv("CODIGO_TTL_MINUTOS", "10"))  # validade do código
+    CODIGO_MAX_TENTATIVAS: int = int(os.getenv("CODIGO_MAX_TENTATIVAS", "5"))  # erros até invalidar
+    CODIGO_REENVIO_SEGUNDOS: int = int(os.getenv("CODIGO_REENVIO_SEGUNDOS", "60"))  # intervalo entre envios
+    CODIGO_BLOQUEIO_MINUTOS: int = int(os.getenv("CODIGO_BLOQUEIO_MINUTOS", "15"))  # espera após errar demais
+
+    # Envio de e-mail (SMTP). Vazio = não configurado (veja services/email_service.py).
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "")  # se vazio, usa o SMTP_USER
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+
 
 settings = Settings()
 

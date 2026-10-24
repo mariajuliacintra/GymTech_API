@@ -5,11 +5,12 @@ Schemas do cadastro de usuários.
 *Response -> o que a API DEVOLVE (nunca contém a senha).
 """
 from datetime import date, datetime
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.core.validators import cpf_valido, somente_digitos
+from app.schemas.verificacao import ProvaIdentidade
 
 
 # ----------------------------------------------------------------- entrada
@@ -180,3 +181,80 @@ class UsuarioListaResponse(BaseModel):
     mensagem: str = "Usuários listados com sucesso!"
     total: int
     itens: list[Union[AlunoResponse, ProfissionalResponse]]
+
+
+# ------------------------------------------------- entrada: atualizar os próprios dados
+class UsuarioUpdate(BaseModel):
+    """
+    O usuário atualiza os PRÓPRIOS dados (a academia não pode). É parcial:
+    só vão para o banco os campos enviados. `verificacao` é obrigatória: prova
+    de que é mesmo a pessoa (código de 6 dígitos enviado ao e-mail).
+
+    Não dá para alterar: cpf, senha (use o "esqueci a senha"), status, tipo,
+    academia. Enviar qualquer campo desconhecido é erro (422), não é ignorado.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    # campos que, se enviados, não podem ser null (telefone e os extras podem: limpam o valor)
+    CAMPOS_NAO_NULOS: ClassVar[frozenset[str]] = frozenset({"nome", "email", "data_nascimento"})
+
+    verificacao: ProvaIdentidade
+    nome: Optional[str] = Field(default=None, min_length=3, max_length=100)
+    email: Optional[EmailStr] = None
+    telefone: Optional[str] = None
+    data_nascimento: Optional[date] = None
+
+    @field_validator("email")
+    @classmethod
+    def email_minusculo(cls, v: Optional[str]) -> Optional[str]:
+        return str(v).lower() if v else v
+
+    @field_validator("telefone")
+    @classmethod
+    def validar_telefone(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        digitos = somente_digitos(v)
+        if len(digitos) not in (10, 11):
+            raise ValueError("Telefone deve ter DDD + número (10 ou 11 dígitos)")
+        return digitos
+
+    @field_validator("data_nascimento")
+    @classmethod
+    def validar_nascimento(cls, v: Optional[date]) -> Optional[date]:
+        if v is not None and v >= date.today():
+            raise ValueError("Data de nascimento deve estar no passado")
+        return v
+
+    @model_validator(mode="after")
+    def validar_envio(self) -> "UsuarioUpdate":
+        enviados = self.model_fields_set - {"verificacao"}
+        if not enviados:
+            raise ValueError("Envie ao menos um campo para atualizar.")
+        for campo in enviados & self.CAMPOS_NAO_NULOS:
+            if getattr(self, campo) is None:
+                raise ValueError(f"O campo '{campo}' não pode ser nulo.")
+        return self
+
+
+class AlunoUpdate(UsuarioUpdate):
+    modalidade_treino: Optional[str] = Field(default=None, max_length=50)
+    objetivo: Optional[str] = Field(default=None, max_length=150)
+
+
+class ProfissionalUpdate(UsuarioUpdate):
+    CAMPOS_NAO_NULOS: ClassVar[frozenset[str]] = frozenset(
+        {"nome", "email", "data_nascimento", "registro_profissional"}
+    )
+
+    especialidade: Optional[str] = Field(default=None, max_length=100)
+    registro_profissional: Optional[str] = Field(default=None, min_length=1, max_length=50)
+
+
+class AlunoUpdateResponse(AlunoResponse):
+    mensagem: str = "Dados atualizados com sucesso!"
+
+
+class ProfissionalUpdateResponse(ProfissionalResponse):
+    mensagem: str = "Dados atualizados com sucesso!"
