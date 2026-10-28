@@ -107,6 +107,7 @@ CREATE TABLE treino (
     titulo_treino      VARCHAR(100) NOT NULL,
     data_criacao       DATE         NOT NULL DEFAULT (CURRENT_DATE),
     data_programada    DATE         NULL,
+    status ENUM('Ativo', 'Cancelado') NOT NULL DEFAULT 'Ativo',
 
     CONSTRAINT pk_treino PRIMARY KEY (id_treino),
     CONSTRAINT fk_treino_aluno
@@ -116,6 +117,9 @@ CREATE TABLE treino (
     CONSTRAINT ck_treino_datas
         CHECK (data_programada IS NULL OR data_programada >= data_criacao)
 ) ENGINE=InnoDB;
+
+ALTER TABLE treino
+    ADD COLUMN status ENUM('Ativo', 'Cancelado') NOT NULL DEFAULT 'Ativo';
 
 CREATE TABLE item_treino (
     id_item_treino  INT           NOT NULL AUTO_INCREMENT,
@@ -212,8 +216,16 @@ CREATE TABLE avaliacao_fisica (
         CHECK (percentual_gordura IS NULL OR percentual_gordura BETWEEN 0 AND 100)
 ) ENGINE=InnoDB;
 
+-- CREATE INSERÇÕES DENTRO DA ENTIDADE ACADEMIA
+insert into academia(nome_academia, email_corporativo, senha_adm, cnpj) values
+	("teste 1", "teste1@gmail.com", "123456", "12345678912345"),
+    ("teste 2", "teste2@gmail.com", "223456", "22345678912345")
+;
 
-
+select * from academia;
+select * from usuario;
+select * from profissional;
+select * from aluno;
 -- AINDA NÃO REALIZADO !!!!!!!
 -- =====================================================================
 -- 8. TOTALIDADE DA GENERALIZAÇÃO

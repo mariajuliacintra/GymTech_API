@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
     ConflitoError,
+    DadoInvalidoError,
     NaoAutenticadoError,
     NaoAutorizadoError,
     NaoEncontradoError,
@@ -59,3 +60,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ServicoIndisponivelError)
     async def servico_indisponivel_handler(request: Request, exc: ServicoIndisponivelError):
         return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+    @app.exception_handler(DadoInvalidoError)
+    async def dado_invalido_handler(request: Request, exc: DadoInvalidoError):
+        return JSONResponse(status_code=422, content={"detail": str(exc)})

@@ -59,3 +59,7 @@ class ReenvioDeCodigoError(NegocioError):
 
 class ServicoIndisponivelError(NegocioError):
     """Serviço externo (e-mail) fora do ar ou não configurado (vira HTTP 503)."""
+
+
+class DadoInvalidoError(NegocioError):
+    """Valor enviado não é aceitável por uma regra que depende do banco (vira HTTP 422)."""

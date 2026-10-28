@@ -15,6 +15,8 @@ from app.routes import (
     exercicios,
     health,
     meu_perfil,
+    meus_treinos,
+    treinos,
     usuarios,
 )
 
@@ -33,3 +35,5 @@ app.include_router(academia_usuarios.router)
 app.include_router(usuarios.router)
 app.include_router(meu_perfil.router)
 app.include_router(exercicios.router)
+app.include_router(treinos.router)
+app.include_router(meus_treinos.router)
