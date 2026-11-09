@@ -12,9 +12,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import Paginacao, get_academia_atual, get_paginacao
+from app.core.dependencies import (
+    Paginacao,
+    get_academia_atual,
+    get_paginacao,
+    get_profissional_atual,
+)
 from app.database import get_db
-from app.models import Academia
+from app.models import Academia, Profissional
 from app.schemas.exercicio import (
     ExercicioCadastroResponse,
     ExercicioCreate,
@@ -111,3 +116,38 @@ def excluir_exercicio(
     """
     copia = exercicio_service.excluir_exercicio(db, academia.id_academia, id_exercicio)
     return ExercicioDeleteResponse(**copia.model_dump())
+
+
+# --------------------------------------------- catálogo, só leitura, para o PROFISSIONAL
+# O profissional precisa ver os exercícios da academia para montar treinos
+# (ele escolhe pelo id). Criar, editar e excluir exercício continua só da academia.
+router_profissional = APIRouter(prefix="/profissionais/me/exercicios", tags=["Exercícios"])
+
+
+@router_profissional.get("", response_model=ExercicioListaResponse, summary="Listar exercícios da academia (profissional)")
+def listar_exercicios_profissional(
+    grupo_muscular: Optional[str] = Query(None, min_length=1, max_length=50, description="Filtra pelo grupo muscular (sem diferenciar maiúsculas)"),
+    busca: Optional[str] = Query(None, min_length=1, max_length=100, description="Parte do nome do exercício"),
+    profissional: Profissional = Depends(get_profissional_atual),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Exercícios da academia do profissional logado (só leitura), em ordem alfabética."""
+    exercicios, total = exercicio_service.listar_exercicios(
+        db, profissional.usuario.fk_id_academia, grupo_muscular, busca, pag.limit, pag.offset
+    )
+    return ExercicioListaResponse(
+        total=total, itens=[ExercicioResponse.model_validate(e) for e in exercicios]
+    )
+
+
+@router_profissional.get("/{id_exercicio}", response_model=ExercicioDetalheResponse, summary="Ver um exercício da academia (profissional)")
+def obter_exercicio_profissional(
+    id_exercicio: int = Path(ge=1),
+    profissional: Profissional = Depends(get_profissional_atual),
+    db: Session = Depends(get_db),
+):
+    exercicio = exercicio_service.obter_exercicio(
+        db, profissional.usuario.fk_id_academia, id_exercicio
+    )
+    return ExercicioDetalheResponse.model_validate(exercicio)

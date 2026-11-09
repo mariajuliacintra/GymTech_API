@@ -4,7 +4,7 @@ Treinos, visão da ACADEMIA (token de academia): alcança todos os treinos dela.
     POST   /treinos                 cadastrar (escolhe aluno e profissional)
     GET    /treinos                 listar
     GET    /treinos/{id_treino}     ver um
-    PATCH  /treinos/{id_treino}     atualizar (título, data, profissional)
+    PATCH  /treinos/{id_treino}     atualizar (título, data, profissional, exercícios)
     DELETE /treinos/{id_treino}     cancelar (status 'Cancelado'; nada é apagado)
 
 Profissionais e alunos usam as rotas de meus_treinos.py.
@@ -40,6 +40,7 @@ class FiltrosTreino:
     data_de: Optional[date]
     data_ate: Optional[date]
     busca: Optional[str]
+    incluir_itens: bool
 
 
 def get_filtros_treino(
@@ -47,9 +48,10 @@ def get_filtros_treino(
     data_de: Optional[date] = Query(None, description="Data programada a partir de (AAAA-MM-DD)"),
     data_ate: Optional[date] = Query(None, description="Data programada até (AAAA-MM-DD)"),
     busca: Optional[str] = Query(None, min_length=1, max_length=100, description="Parte do título do treino"),
+    incluir_itens: bool = Query(False, description="Traz também os exercícios de cada treino"),
 ) -> FiltrosTreino:
     """Filtros comuns às listagens de treino (academia, profissional e aluno)."""
-    return FiltrosTreino(status_treino, data_de, data_ate, busca)
+    return FiltrosTreino(status_treino, data_de, data_ate, busca, incluir_itens)
 
 
 def escopo_academia(academia: Academia = Depends(get_academia_atual)) -> Escopo:
@@ -71,10 +73,15 @@ def cadastrar_treino(
     Cadastra um treino ligando um **aluno** e um **profissional** (os dois pelo
     `id_usuario`, e os dois da academia logada e ativos). `data_programada` é
     opcional e não pode ser anterior a hoje.
+
+    `itens` é obrigatório (ao menos 1): cada item traz `fk_id_exercicio` (da
+    mesma academia, sem repetir), `series`, `repeticoes` e, opcionalmente,
+    `carga_sugerida` e `tempo_descanso` (HH:MM:SS). A ordem da lista é a ordem
+    dos exercícios no treino. Treino e itens são salvos juntos, ou nenhum.
     """
     treino = treino_service.cadastrar_treino(
         db, escopo, dados.fk_id_aluno, dados.fk_id_profissional,
-        dados.titulo_treino, dados.data_programada,
+        dados.titulo_treino, dados.data_programada, dados.itens,
     )
     return TreinoCadastroResponse(**treino.model_dump())
 
@@ -88,10 +95,14 @@ def listar_treinos(
     pag: Paginacao = Depends(get_paginacao),
     db: Session = Depends(get_db),
 ):
-    """Treinos da academia, do mais próximo para o mais distante (sem data por último)."""
+    """
+    Treinos da academia, do mais próximo para o mais distante (sem data por último).
+    Cada treino traz `quantidade_exercicios`; `itens` só vem preenchido com `?incluir_itens=true`.
+    """
     itens, total = treino_service.listar_treinos(
         db, escopo, filtros.status, fk_id_aluno, fk_id_profissional,
-        filtros.data_de, filtros.data_ate, filtros.busca, pag.limit, pag.offset,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        pag.limit, pag.offset,
     )
     return TreinoListaResponse(total=total, itens=itens)
 
@@ -115,8 +126,11 @@ def atualizar_treino(
 ):
     """
     Atualiza só os campos enviados: `titulo_treino`, `data_programada` (null
-    limpa) e `fk_id_profissional`. O aluno não muda (seria outro treino).
-    Treino cancelado não pode ser alterado (409).
+    limpa), `fk_id_profissional` e `itens`. O aluno não muda (seria outro treino).
+
+    `itens` é opcional: se enviado, a lista de exercícios é **substituída por
+    inteira**, na ordem enviada (e os `id_item_treino` mudam); se não, os
+    exercícios ficam como estão. Treino cancelado não pode ser alterado (409).
     """
     treino = treino_service.atualizar_treino(db, escopo, id_treino, dados)
     return TreinoUpdateResponse(**treino.model_dump())

@@ -129,6 +129,6 @@ def excluir_exercicio(db: Session, id_academia: int, id_exercicio: int) -> Exerc
     except IntegrityError as exc:  # chave estrangeira: outra tabela ainda usa este exercício
         db.rollback()
         raise ConflitoError(
-            "Este exercício está em uso e não pode ser excluído."
+            "Este exercício está em uso em algum treino e não pode ser excluído."
         ) from exc
     return copia

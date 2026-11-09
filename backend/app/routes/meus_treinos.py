@@ -5,7 +5,7 @@ Profissional (alcança só os treinos em que ele é o profissional):
     POST   /profissionais/me/treinos                cadastrar (para um aluno da academia)
     GET    /profissionais/me/treinos                listar
     GET    /profissionais/me/treinos/{id_treino}    ver um
-    PATCH  /profissionais/me/treinos/{id_treino}    atualizar título/data
+    PATCH  /profissionais/me/treinos/{id_treino}    atualizar título/data/exercícios
     DELETE /profissionais/me/treinos/{id_treino}    cancelar
 
 Aluno (só visualiza os treinos dele):
@@ -64,10 +64,13 @@ def cadastrar_treino_profissional(
     """
     O profissional logado cadastra um treino para um **aluno da mesma academia**
     (ativo). O profissional responsável é ele mesmo: `fk_id_profissional` não se envia.
+
+    `itens` é obrigatório (ao menos 1), com exercícios da academia e sem repetir:
+    veja os disponíveis em `GET /profissionais/me/exercicios`.
     """
     treino = treino_service.cadastrar_treino(
         db, escopo, dados.fk_id_aluno, escopo.id_profissional,
-        dados.titulo_treino, dados.data_programada,
+        dados.titulo_treino, dados.data_programada, dados.itens,
     )
     return TreinoCadastroResponse(**treino.model_dump())
 
@@ -87,7 +90,8 @@ def listar_treinos_profissional(
     """Treinos em que o profissional logado é o responsável."""
     itens, total = treino_service.listar_treinos(
         db, escopo, filtros.status, fk_id_aluno, None,
-        filtros.data_de, filtros.data_ate, filtros.busca, pag.limit, pag.offset,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        pag.limit, pag.offset,
     )
     return TreinoListaResponse(total=total, itens=itens)
 
@@ -117,7 +121,11 @@ def atualizar_treino_profissional(
     escopo: Escopo = Depends(escopo_profissional),
     db: Session = Depends(get_db),
 ):
-    """Atualiza `titulo_treino` e/ou `data_programada` (null limpa). Treino cancelado não muda (409)."""
+    """
+    Atualiza `titulo_treino`, `data_programada` (null limpa) e/ou `itens`. Se `itens`
+    vier, a lista de exercícios é substituída por inteira (na ordem enviada).
+    Treino cancelado não muda (409).
+    """
     treino = treino_service.atualizar_treino(db, escopo, id_treino, dados)
     return TreinoUpdateResponse(**treino.model_dump())
 
@@ -151,7 +159,8 @@ def listar_treinos_aluno(
     """Treinos do aluno logado (só visualização), do mais próximo para o mais distante."""
     itens, total = treino_service.listar_treinos(
         db, escopo, filtros.status, None, None,
-        filtros.data_de, filtros.data_ate, filtros.busca, pag.limit, pag.offset,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        pag.limit, pag.offset,
     )
     return TreinoListaResponse(total=total, itens=itens)
 

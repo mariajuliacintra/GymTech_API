@@ -7,7 +7,8 @@ from app.models.academia import Academia
 from app.models.aluno import Aluno
 from app.models.profissional import Profissional
 from app.models.exercicio import Exercicio
+from app.models.item_treino import ItemTreino
 from app.models.treino import Treino
 from app.models.usuario import Usuario
 
-__all__ = ["Academia", "Usuario", "Aluno", "Profissional", "Exercicio", "Treino"]
+__all__ = ["Academia", "Usuario", "Aluno", "Profissional", "Exercicio", "ItemTreino", "Treino"]
