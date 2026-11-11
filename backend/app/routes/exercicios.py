@@ -6,6 +6,12 @@ CRUD de exercícios. Tudo exige token de ACADEMIA e só alcança os exercícios 
     GET    /exercicios/{id_exercicio}     ver um
     PATCH  /exercicios/{id_exercicio}     atualizar (só os campos enviados)
     DELETE /exercicios/{id_exercicio}     excluir (apaga de verdade)
+
+O PROFISSIONAL e o ALUNO só VISUALIZAM os exercícios da própria academia
+(no fim deste arquivo): quem cadastra, altera e exclui é só a academia.
+
+    GET /profissionais/me/exercicios        GET /profissionais/me/exercicios/{id}
+    GET /alunos/me/exercicios               GET /alunos/me/exercicios/{id}
 """
 from typing import Optional
 
@@ -15,11 +21,12 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import (
     Paginacao,
     get_academia_atual,
+    get_aluno_atual,
     get_paginacao,
     get_profissional_atual,
 )
 from app.database import get_db
-from app.models import Academia, Profissional
+from app.models import Academia, Aluno, Profissional
 from app.schemas.exercicio import (
     ExercicioCadastroResponse,
     ExercicioCreate,
@@ -149,5 +156,40 @@ def obter_exercicio_profissional(
 ):
     exercicio = exercicio_service.obter_exercicio(
         db, profissional.usuario.fk_id_academia, id_exercicio
+    )
+    return ExercicioDetalheResponse.model_validate(exercicio)
+
+
+# ------------------------------------------------- catálogo, só leitura, para o ALUNO
+# O aluno vê os exercícios da academia dele (por exemplo, para entender os
+# exercícios do treino). Também só leitura: criar, editar e excluir é da academia.
+router_aluno = APIRouter(prefix="/alunos/me/exercicios", tags=["Exercícios"])
+
+
+@router_aluno.get("", response_model=ExercicioListaResponse, summary="Listar exercícios da academia (aluno)")
+def listar_exercicios_aluno(
+    grupo_muscular: Optional[str] = Query(None, min_length=1, max_length=50, description="Filtra pelo grupo muscular (sem diferenciar maiúsculas)"),
+    busca: Optional[str] = Query(None, min_length=1, max_length=100, description="Parte do nome do exercício"),
+    aluno: Aluno = Depends(get_aluno_atual),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Exercícios da academia do aluno logado (só leitura), em ordem alfabética."""
+    exercicios, total = exercicio_service.listar_exercicios(
+        db, aluno.usuario.fk_id_academia, grupo_muscular, busca, pag.limit, pag.offset
+    )
+    return ExercicioListaResponse(
+        total=total, itens=[ExercicioResponse.model_validate(e) for e in exercicios]
+    )
+
+
+@router_aluno.get("/{id_exercicio}", response_model=ExercicioDetalheResponse, summary="Ver um exercício da academia (aluno)")
+def obter_exercicio_aluno(
+    id_exercicio: int = Path(ge=1),
+    aluno: Aluno = Depends(get_aluno_atual),
+    db: Session = Depends(get_db),
+):
+    exercicio = exercicio_service.obter_exercicio(
+        db, aluno.usuario.fk_id_academia, id_exercicio
     )
     return ExercicioDetalheResponse.model_validate(exercicio)
