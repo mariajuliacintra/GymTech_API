@@ -11,11 +11,13 @@ from app.core.handlers import register_exception_handlers
 from app.routes import (
     academia_usuarios,
     academias,
+    aulas,
     auth,
     exercicios,
     health,
     meu_perfil,
     meus_treinos,
+    minhas_aulas,
     treinos,
     usuarios,
 )
@@ -38,3 +40,5 @@ app.include_router(exercicios.router)
 app.include_router(exercicios.router_profissional)
 app.include_router(treinos.router)
 app.include_router(meus_treinos.router)
+app.include_router(aulas.router)
+app.include_router(minhas_aulas.router)

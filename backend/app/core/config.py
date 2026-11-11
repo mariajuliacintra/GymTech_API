@@ -36,6 +36,9 @@ class Settings:
     LOGIN_MAX_TENTATIVAS: int = int(os.getenv("LOGIN_MAX_TENTATIVAS", "5"))
     LOGIN_BLOQUEIO_MINUTOS: int = int(os.getenv("LOGIN_BLOQUEIO_MINUTOS", "15"))
 
+    # Fuso da academia: datas/horas sem fuso (como o DATETIME das aulas) são entendidas neste fuso.
+    TIMEZONE: str = os.getenv("TIMEZONE", "America/Sao_Paulo")
+
     # Códigos de verificação enviados por e-mail (esqueci a senha / confirmar alterações).
     CODIGO_TTL_MINUTOS: int = int(os.getenv("CODIGO_TTL_MINUTOS", "10"))  # validade do código
     CODIGO_MAX_TENTATIVAS: int = int(os.getenv("CODIGO_MAX_TENTATIVAS", "5"))  # erros até invalidar
