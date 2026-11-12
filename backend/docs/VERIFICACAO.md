@@ -19,7 +19,7 @@ Em todas as rotas abaixo o código vai assim:
 2. `PATCH /alunos/me` ou `PATCH /profissionais/me` com os campos a mudar + `verificacao`.
 
 Só os campos enviados mudam. Editáveis: `nome`, `email`, `telefone` (`null` remove),
-`data_nascimento` · aluno: `modalidade_treino`, `objetivo` ·
+`data_nascimento` · aluno: `objetivo` ·
 profissional: `especialidade`, `registro_profissional`.
 Qualquer outro campo (cpf, senha, status...) dá 422. A academia não altera dados de usuários.
 

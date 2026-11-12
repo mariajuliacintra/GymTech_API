@@ -23,6 +23,8 @@ def cadastrar_academia(db: Session, dados: AcademiaCreate) -> Academia:
         email_corporativo=dados.email_corporativo,
         senha_adm=gerar_hash_senha(dados.senha_adm),  # nunca a senha pura
         cnpj=dados.cnpj,
+        endereco=dados.endereco,
+        telefone=dados.telefone,
     )
     db.add(academia)
     try:

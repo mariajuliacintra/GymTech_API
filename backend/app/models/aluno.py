@@ -28,7 +28,6 @@ class Aluno(Base):
         default="Aluno",
         server_default="Aluno",
     )
-    modalidade_treino: Mapped[Optional[str]] = mapped_column(String(50))
     objetivo: Mapped[Optional[str]] = mapped_column(String(150))
 
     usuario: Mapped["Usuario"] = relationship(back_populates="aluno")

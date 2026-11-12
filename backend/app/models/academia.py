@@ -12,5 +12,7 @@ class Academia(Base):
     email_corporativo: Mapped[str] = mapped_column(String(100), unique=True)
     senha_adm: Mapped[str] = mapped_column(String(255))
     cnpj: Mapped[str] = mapped_column(CHAR(14), unique=True)
+    endereco: Mapped[str] = mapped_column(String(255))
+    telefone: Mapped[str] = mapped_column(CHAR(14))
 
     usuarios: Mapped[list["Usuario"]] = relationship(back_populates="academia")

@@ -66,8 +66,8 @@ class UsuarioCreate(BaseModel):
 
 
 class AlunoCreate(UsuarioCreate):
-    modalidade_treino: Optional[str] = Field(default=None, max_length=50)
     objetivo: Optional[str] = Field(default=None, max_length=150)
+
 
 class ProfissionalCreate(UsuarioCreate):
     especialidade: Optional[str] = Field(default=None, max_length=100)
@@ -91,7 +91,6 @@ class UsuarioResponse(BaseModel):
 
 
 class AlunoResponse(UsuarioResponse):
-    modalidade_treino: Optional[str]
     objetivo: Optional[str]
 
     @classmethod
@@ -99,7 +98,6 @@ class AlunoResponse(UsuarioResponse):
         base = UsuarioResponse.model_validate(usuario).model_dump()
         return cls(
             **base,
-            modalidade_treino=usuario.aluno.modalidade_treino,
             objetivo=usuario.aluno.objetivo,
         )
 
@@ -116,6 +114,7 @@ class ProfissionalResponse(UsuarioResponse):
             especialidade=usuario.profissional.especialidade,
             registro_profissional=usuario.profissional.registro_profissional,
         )
+
 
 class AlunoCadastroResponse(AlunoResponse):
     mensagem: str = "Aluno cadastrado com sucesso!"
@@ -135,8 +134,7 @@ class UsuarioInativadoResponse(BaseModel):
     Resposta da "deleção" (inativação) de aluno/profissional.
 
     `cancelamentos` mostra o que foi cancelado em cascata nas outras tabelas
-    ligadas ao usuário, ex.: {"agendamentos cancelados": 3}. Fica vazio
-    enquanto nenhuma tabela ligada ao usuário tiver sido criada.
+    ligadas ao usuário, ex.: {"agendamentos cancelados": 3}.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -239,7 +237,6 @@ class UsuarioUpdate(BaseModel):
 
 
 class AlunoUpdate(UsuarioUpdate):
-    modalidade_treino: Optional[str] = Field(default=None, max_length=50)
     objetivo: Optional[str] = Field(default=None, max_length=150)
 
 

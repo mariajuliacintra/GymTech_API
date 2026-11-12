@@ -154,14 +154,12 @@ def cadastrar_aluno(
         _aplicar_dados_comuns(existente, dados)
         if existente.aluno is None:  # não deveria acontecer; rede de segurança
             existente.aluno = Aluno()
-        existente.aluno.modalidade_treino = dados.modalidade_treino
         existente.aluno.objetivo = dados.objetivo
         return _salvar(db, existente), True
 
     _checar_email_livre(db, dados.email)
     usuario = _montar_usuario(id_academia, dados, tipo_perfil="Aluno")
     usuario.aluno = Aluno(
-        modalidade_treino=dados.modalidade_treino,
         objetivo=dados.objetivo,
     )
     return _salvar(db, usuario), False
@@ -306,7 +304,7 @@ def _atualizar(
         if campo in campos:
             setattr(usuario, campo, campos[campo])
     alvo = usuario.aluno if usuario.tipo_perfil == "Aluno" else usuario.profissional
-    for campo in ("modalidade_treino", "objetivo", "especialidade", "registro_profissional"):
+    for campo in ("objetivo", "especialidade", "registro_profissional"):
         if campo in campos:
             setattr(alvo, campo, campos[campo])
 

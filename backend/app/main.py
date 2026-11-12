@@ -18,6 +18,7 @@ from app.routes import (
     meu_perfil,
     meus_treinos,
     minhas_aulas,
+    reservas_aulas,
     treinos,
     usuarios,
 )
@@ -43,3 +44,4 @@ app.include_router(treinos.router)
 app.include_router(meus_treinos.router)
 app.include_router(aulas.router)
 app.include_router(minhas_aulas.router)
+app.include_router(reservas_aulas.router)

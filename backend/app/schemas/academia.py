@@ -10,6 +10,8 @@ class AcademiaCreate(BaseModel):
     cnpj: str
     email_corporativo: EmailStr
     senha_adm: str = Field(min_length=8)
+    endereco: str = Field(min_length=5, max_length=255)
+    telefone: str
 
     @field_validator("cnpj")
     @classmethod
@@ -33,6 +35,14 @@ class AcademiaCreate(BaseModel):
             raise ValueError("A senha pode ter no máximo 72 bytes")
         return v
 
+    @field_validator("telefone")
+    @classmethod
+    def validar_telefone(cls, v: str) -> str:
+        digitos = somente_digitos(v)
+        if len(digitos) not in (10, 11):
+            raise ValueError("Telefone deve ter DDD + número (10 ou 11 dígitos)")
+        return digitos
+
 
 class AcademiaResponse(BaseModel):
     """Nunca inclui a senha."""
@@ -43,6 +53,8 @@ class AcademiaResponse(BaseModel):
     nome_academia: str
     email_corporativo: str
     cnpj: str
+    endereco: str
+    telefone: str
 
 
 class AcademiaCadastroResponse(AcademiaResponse):

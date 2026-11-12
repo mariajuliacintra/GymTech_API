@@ -4,7 +4,7 @@ Aulas, visão da ACADEMIA (token de academia). É a única que cadastra e altera
     POST   /aulas                 cadastrar
     GET    /aulas                 listar
     GET    /aulas/{id_aula}       ver uma
-    PATCH  /aulas/{id_aula}       atualizar (nome, data/hora, capacidade, profissional)
+    PATCH  /aulas/{id_aula}       atualizar (nome, tipo, data/hora, capacidade, profissional)
     DELETE /aulas/{id_aula}       cancelar (status 'Cancelada'; nada é apagado)
 
 Profissionais e alunos só visualizam: veja minhas_aulas.py.
@@ -29,6 +29,8 @@ from app.schemas.aula import (
     AulaUpdateResponse,
 )
 from app.services import aula_service
+from app.schemas.reserva_aula import ReservaAulaListaResponse
+from app.services import reserva_aula_service
 from app.services.aula_service import Escopo, FiltroStatus
 
 router = APIRouter(prefix="/aulas", tags=["Aulas"])
@@ -37,6 +39,7 @@ router = APIRouter(prefix="/aulas", tags=["Aulas"])
 @dataclass
 class FiltrosAula:
     status: FiltroStatus
+    tipo_aula: Optional[str]
     data_de: Optional[date]
     data_ate: Optional[date]
     busca: Optional[str]
@@ -45,13 +48,14 @@ class FiltrosAula:
 
 def get_filtros_aula(
     status_aula: FiltroStatus = Query("Ativa", alias="status", description="Ativa (padrão), Cancelada ou Todas"),
+    tipo_aula: Optional[str] = Query(None, min_length=1, max_length=100, description="Filtra pelo tipo da aula"),
     data_de: Optional[date] = Query(None, description="Aulas a partir deste dia (AAAA-MM-DD)"),
     data_ate: Optional[date] = Query(None, description="Aulas até este dia, inclusive (AAAA-MM-DD)"),
     busca: Optional[str] = Query(None, min_length=1, max_length=100, description="Parte do nome da aula"),
     futuras: bool = Query(False, description="Só aulas que ainda não aconteceram"),
 ) -> FiltrosAula:
     """Filtros comuns às listagens de aula (academia, profissional e aluno)."""
-    return FiltrosAula(status_aula, data_de, data_ate, busca, futuras)
+    return FiltrosAula(status_aula, tipo_aula, data_de, data_ate, busca, futuras)
 
 
 def escopo_academia(academia: Academia = Depends(get_academia_atual)) -> Escopo:
@@ -92,7 +96,7 @@ def listar_aulas(
 ):
     """Aulas da academia, da mais próxima para a mais distante."""
     itens, total = aula_service.listar_aulas(
-        db, escopo, filtros.status, fk_id_profissional,
+        db, escopo, filtros.status, fk_id_profissional, filtros.tipo_aula,
         filtros.data_de, filtros.data_ate, filtros.busca, filtros.futuras,
         pag.limit, pag.offset,
     )
@@ -117,7 +121,7 @@ def atualizar_aula(
     db: Session = Depends(get_db),
 ):
     """
-    Atualiza só os campos enviados (`nome_aula`, `data_horario`,
+    Atualiza só os campos enviados (`nome_aula`, `tipo_aula`, `data_horario`,
     `capacidade_maxima`, `fk_id_profissional`; nenhum aceita null). As mesmas
     regras do cadastro valem. Aula cancelada ou que já aconteceu não muda (409).
     """
@@ -131,6 +135,38 @@ def cancelar_aula(
     escopo: Escopo = Depends(escopo_academia),
     db: Session = Depends(get_db),
 ):
-    """**Cancela** a aula (status 'Cancelada'): some da listagem padrão, mas continua no banco."""
+    """**Cancela** a aula (status 'Cancelada') e suas reservas confirmadas: some da listagem padrão, mas continua no banco."""
     aula = aula_service.cancelar_aula(db, escopo, id_aula)
     return AulaCancelamentoResponse(**aula.model_dump())
+
+@router.get(
+    "/{id_aula}/reservas",
+    response_model=ReservaAulaListaResponse,
+    tags=["Reservas de aula"],
+    summary="Listar reservas de uma aula específica",
+)
+def listar_reservas_da_aula(
+    id_aula: int = Path(ge=1),
+    status_reserva: reserva_aula_service.FiltroStatus = Query(
+        "Confirmado",
+        alias="status",
+        description="Confirmado (padrão), Cancelado ou Todas",
+    ),
+    escopo: Escopo = Depends(escopo_academia),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Retorna os alunos reservados nesta aula específica (padrão: só 'Confirmado')."""
+    itens, total = reserva_aula_service.listar_reservas(
+        db=db,
+        escopo=reserva_aula_service.Escopo(id_academia=escopo.id_academia),
+        status=status_reserva,
+        fk_id_aula=id_aula,
+        fk_id_aluno=None,
+        data_de=None,
+        data_ate=None,
+        futuras=False,
+        limit=pag.limit,
+        offset=pag.offset,
+    )
+    return ReservaAulaListaResponse(total=total, itens=itens)

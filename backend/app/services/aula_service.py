@@ -15,10 +15,11 @@ Regras:
 - o mesmo profissional não pode ter duas aulas ATIVAS no mesmo horário (a tabela
   não guarda duração, então só dá para detectar horário exatamente igual);
 - aula que já aconteceu não pode ser alterada nem cancelada (histórico);
-- cancelar = status 'Cancelada' (nada é apagado); aula cancelada não muda mais (409);
+- cancelar = status 'Cancelada' (nada é apagado) e cancela automaticamente todas
+  as reservas confirmadas daquela aula; aula cancelada não muda mais (409);
+- a capacidade máxima não pode ser reduzida para menos que as reservas já confirmadas;
 - quando um PROFISSIONAL é inativado, as aulas ativas dele que ainda não
-  aconteceram são canceladas em cascata (cascata_service). Quando a reserva_aula
-  existir, cancelar uma aula também cancelará as reservas dela.
+  aconteceram são canceladas em cascata (cascata_service), junto com suas reservas.
 """
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
@@ -30,7 +31,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.core.exceptions import ConflitoError, DadoInvalidoError, NaoEncontradoError
 from app.core.tempo import agora_local
-from app.models import Aula, Usuario
+from app.models import Aula, ReservaAula, Usuario
 from app.schemas.aula import AulaCreate, AulaResponse, AulaUpdate
 from app.services.cascata_service import ao_inativar
 
@@ -49,9 +50,21 @@ class Escopo:
 
 # ------------------------------------------------------------------ consultas
 def _consulta_base():
-    """SELECT da aula + nome do profissional (junta usuario)."""
+    """SELECT da aula + nome do profissional + contagem de reservas confirmadas."""
     prof_u = aliased(Usuario, name="profissional_usuario")
-    return select(Aula, prof_u.nome).join(prof_u, prof_u.id_usuario == Aula.fk_id_profissional)
+    ocupadas = (
+        select(func.count(ReservaAula.id_reserva_aula))
+        .where(
+            ReservaAula.fk_id_aula == Aula.id_aula,
+            ReservaAula.status == "Confirmado",
+        )
+        .correlate(Aula)
+        .scalar_subquery()
+    )
+    return (
+        select(Aula, prof_u.nome, ocupadas.label("vagas_ocupadas"))
+        .join(prof_u, prof_u.id_usuario == Aula.fk_id_profissional)
+    )
 
 
 def _filtros_escopo(escopo: Escopo) -> list:
@@ -62,15 +75,19 @@ def _filtros_escopo(escopo: Escopo) -> list:
 
 
 def _resposta(linha) -> AulaResponse:
-    aula, nome_profissional = linha
+    aula, nome_profissional, vagas_ocupadas = linha
+    ocupadas = int(vagas_ocupadas or 0)
     return AulaResponse(
         id_aula=aula.id_aula,
         fk_id_academia=aula.fk_id_academia,
         fk_id_profissional=aula.fk_id_profissional,
         nome_profissional=nome_profissional,
         nome_aula=aula.nome_aula,
+        tipo_aula=aula.tipo_aula,
         data_horario=aula.data_horario,
         capacidade_maxima=aula.capacidade_maxima,
+        vagas_ocupadas=ocupadas,
+        vagas_disponiveis=max(0, aula.capacidade_maxima - ocupadas),
         status=aula.status,
     )
 
@@ -94,14 +111,23 @@ def _travar(db: Session, id_aula: int) -> Aula:
     ).one()
 
 
+def _contar_confirmadas(db: Session, id_aula: int) -> int:
+    return (
+        db.scalar(
+            select(func.count(ReservaAula.id_reserva_aula)).where(
+                ReservaAula.fk_id_aula == id_aula,
+                ReservaAula.status == "Confirmado",
+            )
+        )
+        or 0
+    )
+
+
 def _confirmar(db: Session) -> None:
     try:
         db.commit()
     except DBAPIError as exc:
         db.rollback()
-        # Rede de segurança: a API já valida antes, mas se o CHECK do banco disparar
-        # mesmo assim, o aviso é claro em vez de um erro 500 (constraint reconhecida
-        # pelo NOME, que aparece na mensagem do MySQL, do MariaDB e do SQLite).
         if any(nome in str(exc.orig) for nome in _CHECKS_AULA):
             raise DadoInvalidoError("A capacidade máxima deve ser maior que zero.") from exc
         if isinstance(exc, IntegrityError):
@@ -118,7 +144,6 @@ def _validar_profissional(db: Session, id_academia: int, id_profissional: int) -
             Usuario.fk_id_academia == id_academia,
         )
     )
-    # de outra academia, de outro tipo ou inexistente: mesma resposta
     if usuario is None:
         raise NaoEncontradoError("Profissional não encontrado.")
     if usuario.status != "Ativo":
@@ -156,6 +181,7 @@ def cadastrar_aula(db: Session, escopo: Escopo, dados: AulaCreate) -> AulaRespon
         fk_id_academia=escopo.id_academia,
         fk_id_profissional=dados.fk_id_profissional,
         nome_aula=dados.nome_aula,
+        tipo_aula=dados.tipo_aula,
         data_horario=dados.data_horario,
         capacidade_maxima=dados.capacidade_maxima,
     )
@@ -170,6 +196,7 @@ def listar_aulas(
     escopo: Escopo,
     status: FiltroStatus = "Ativa",
     fk_id_profissional: Optional[int] = None,
+    tipo_aula: Optional[str] = None,
     data_de: Optional[date] = None,
     data_ate: Optional[date] = None,
     busca: Optional[str] = None,
@@ -186,12 +213,13 @@ def listar_aulas(
         filtros.append(Aula.status == status)
     if fk_id_profissional is not None:
         filtros.append(Aula.fk_id_profissional == fk_id_profissional)
+    if tipo_aula:
+        filtros.append(func.lower(Aula.tipo_aula) == tipo_aula.lower())
     if data_de:
         filtros.append(Aula.data_horario >= datetime.combine(data_de, time.min))
     if data_ate:  # o dia inteiro de data_ate entra
         filtros.append(Aula.data_horario < datetime.combine(data_ate + timedelta(days=1), time.min))
     if busca:
-        # autoescape: "%" e "_" digitados na busca valem como texto comum
         filtros.append(Aula.nome_aula.icontains(busca, autoescape=True))
     if futuras:
         filtros.append(Aula.data_horario > agora_local())
@@ -227,6 +255,13 @@ def atualizar_aula(db: Session, escopo: Escopo, id_aula: int, dados: AulaUpdate)
         _validar_profissional(db, escopo.id_academia, novo_prof)
     if "data_horario" in campos:
         _exigir_futuro(nova_data)
+    if "capacidade_maxima" in campos:
+        ocupadas = _contar_confirmadas(db, id_aula)
+        if campos["capacidade_maxima"] < ocupadas:
+            raise ConflitoError(
+                f"Não é possível reduzir a capacidade para {campos['capacidade_maxima']}: "
+                f"já existem {ocupadas} reservas confirmadas nesta aula."
+            )
     if novo_prof != aula.fk_id_profissional or nova_data != aula.data_horario:
         _checar_conflito(db, novo_prof, nova_data, ignorar_id=id_aula)
 
@@ -245,6 +280,16 @@ def cancelar_aula(db: Session, escopo: Escopo, id_aula: int) -> AulaResponse:
     if aula.data_horario <= agora_local():
         raise ConflitoError("Aula que já aconteceu não pode ser cancelada.")
     aula.status = "Cancelada"
+    # Cancela em conjunto todas as reservas confirmadas desta aula
+    db.execute(
+        update(ReservaAula)
+        .where(
+            ReservaAula.fk_id_aula == id_aula,
+            ReservaAula.status == "Confirmado",
+        )
+        .values(status="Cancelado")
+        .execution_options(synchronize_session=False)
+    )
     _confirmar(db)
     return _buscar(db, escopo, id_aula)
 

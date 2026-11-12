@@ -25,6 +25,7 @@ class _EntradaAula(BaseModel):
 class AulaCreate(_EntradaAula):
     fk_id_profissional: int = Field(ge=1, description="id_usuario do profissional que dá a aula")
     nome_aula: str = Field(min_length=3, max_length=100)
+    tipo_aula: str = Field(min_length=2, max_length=100)
     data_horario: datetime = Field(description="Início da aula, no horário da academia (AAAA-MM-DDTHH:MM:SS)")
     capacidade_maxima: int = Field(ge=1, le=500)
 
@@ -34,6 +35,7 @@ class AulaUpdate(_EntradaAula):
 
     fk_id_profissional: Optional[int] = Field(default=None, ge=1)
     nome_aula: Optional[str] = Field(default=None, min_length=3, max_length=100)
+    tipo_aula: Optional[str] = Field(default=None, min_length=2, max_length=100)
     data_horario: Optional[datetime] = None
     capacidade_maxima: Optional[int] = Field(default=None, ge=1, le=500)
 
@@ -54,8 +56,11 @@ class AulaResponse(BaseModel):
     fk_id_profissional: int
     nome_profissional: str
     nome_aula: str
+    tipo_aula: str
     data_horario: datetime
     capacidade_maxima: int
+    vagas_ocupadas: int
+    vagas_disponiveis: int
     status: str
 
 

@@ -8,7 +8,7 @@ from app.database import Base
 
 class Aula(Base):
     """
-    Aula de uma academia, dada por um profissional (script SQL do projeto + coluna status).
+    Aula de uma academia, dada por um profissional (script SQL do projeto).
 
     data_horario é um DATETIME sem fuso: vale o horário da academia
     (ver core/tempo.py). A tabela não guarda duração, só o início.
@@ -29,3 +29,4 @@ class Aula(Base):
     status: Mapped[str] = mapped_column(
         Enum("Ativa", "Cancelada", name="status_aula"), server_default="Ativa"
     )
+    tipo_aula: Mapped[str] = mapped_column(String(100))

@@ -14,6 +14,8 @@ CREATE TABLE academia (
     email_corporativo  VARCHAR(100) NOT NULL,
     senha_adm          VARCHAR(255) NOT NULL,
     cnpj               CHAR(14)     NOT NULL,
+    endereco 		   VARCHAR(255) NOT NULL,
+    telefone 		   CHAR(14)		NOT NULL,
 
     CONSTRAINT pk_academia PRIMARY KEY (id_academia),
     CONSTRAINT uq_academia_email UNIQUE (email_corporativo),
@@ -55,7 +57,6 @@ CREATE TABLE usuario (
 CREATE TABLE aluno (
     id_usuario         INT          NOT NULL,
     tipo_perfil        ENUM('Profissional','Aluno') NOT NULL DEFAULT 'Aluno',
-    modalidade_treino  VARCHAR(50)  NULL,
     objetivo           VARCHAR(150) NULL,
 
     CONSTRAINT pk_aluno PRIMARY KEY (id_usuario),
@@ -151,6 +152,8 @@ CREATE TABLE aula (
     nome_aula          VARCHAR(100) NOT NULL,
     data_horario       DATETIME     NOT NULL,
     capacidade_maxima  INT          NOT NULL,
+    status ENUM('Ativa', 'Cancelada') NOT NULL DEFAULT 'Ativa',
+    tipo_aula 		   VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_aula PRIMARY KEY (id_aula),
     CONSTRAINT fk_aula_academia
@@ -159,6 +162,7 @@ CREATE TABLE aula (
         FOREIGN KEY (fk_id_profissional) REFERENCES profissional (id_usuario),
     CONSTRAINT ck_aula_capacidade CHECK (capacidade_maxima > 0)
 ) ENGINE=InnoDB;
+
 
 CREATE TABLE reserva_aula (
     id_reserva_aula  INT      NOT NULL AUTO_INCREMENT,
@@ -226,6 +230,7 @@ select * from academia;
 select * from usuario;
 select * from profissional;
 select * from aluno;
+select * from treino;
 -- AINDA NÃO REALIZADO !!!!!!!
 -- =====================================================================
 -- 8. TOTALIDADE DA GENERALIZAÇÃO

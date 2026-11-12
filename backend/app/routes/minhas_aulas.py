@@ -1,6 +1,6 @@
 """
 Aulas, visão do PROFISSIONAL e do ALUNO. Só leitura: quem cadastra e altera
-aulas é a academia (aulas.py), e o aluno reserva vaga na etapa da reserva_aula.
+aulas é a academia (aulas.py), e o aluno reserva vaga em reservas_aulas.py.
 
     GET /profissionais/me/aulas              as aulas em que ele é o profissional
     GET /profissionais/me/aulas/{id_aula}
@@ -44,7 +44,7 @@ def listar_aulas_profissional(
 ):
     """Aulas em que o profissional logado é o responsável (só visualização)."""
     itens, total = aula_service.listar_aulas(
-        db, escopo, filtros.status, None,
+        db, escopo, filtros.status, None, filtros.tipo_aula,
         filtros.data_de, filtros.data_ate, filtros.busca, filtros.futuras,
         pag.limit, pag.offset,
     )
@@ -69,9 +69,9 @@ def listar_aulas_aluno(
     pag: Paginacao = Depends(get_paginacao),
     db: Session = Depends(get_db),
 ):
-    """Todas as aulas da academia do aluno logado (só visualização). Para reservar vaga, use a reserva."""
+    """Todas as aulas da academia do aluno logado (só visualização). Para reservar vaga, use /alunos/me/reservas."""
     itens, total = aula_service.listar_aulas(
-        db, escopo, filtros.status, fk_id_profissional,
+        db, escopo, filtros.status, fk_id_profissional, filtros.tipo_aula,
         filtros.data_de, filtros.data_ate, filtros.busca, filtros.futuras,
         pag.limit, pag.offset,
     )
