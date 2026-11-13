@@ -11,6 +11,8 @@ from app.models.item_treino import ItemTreino
 from app.models.profissional import Profissional
 from app.models.reserva_aula import ReservaAula
 from app.models.treino import Treino
+from app.models.agendamento_avaliacao import AgendamentoAvaliacao
+from app.models.avaliacao_fisica import AvaliacaoFisica
 from app.models.usuario import Usuario
 
 __all__ = [
@@ -23,4 +25,6 @@ __all__ = [
     "Treino",
     "Aula",
     "ReservaAula",
+    "AgendamentoAvaliacao",
+    "AvaliacaoFisica",
 ]

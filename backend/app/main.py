@@ -10,7 +10,9 @@ from app.core.config import settings
 from app.core.handlers import register_exception_handlers
 from app.routes import (
     academia_usuarios,
+    academia_usuarios,
     academias,
+    agendamentos_avaliacoes,
     aulas,
     auth,
     exercicios,
@@ -45,3 +47,4 @@ app.include_router(meus_treinos.router)
 app.include_router(aulas.router)
 app.include_router(minhas_aulas.router)
 app.include_router(reservas_aulas.router)
+app.include_router(agendamentos_avaliacoes.router)

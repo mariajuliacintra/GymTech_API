@@ -29,8 +29,6 @@ from app.schemas.aula import (
     AulaUpdateResponse,
 )
 from app.services import aula_service
-from app.schemas.reserva_aula import ReservaAulaListaResponse
-from app.services import reserva_aula_service
 from app.services.aula_service import Escopo, FiltroStatus
 
 router = APIRouter(prefix="/aulas", tags=["Aulas"])
@@ -138,35 +136,3 @@ def cancelar_aula(
     """**Cancela** a aula (status 'Cancelada') e suas reservas confirmadas: some da listagem padrão, mas continua no banco."""
     aula = aula_service.cancelar_aula(db, escopo, id_aula)
     return AulaCancelamentoResponse(**aula.model_dump())
-
-@router.get(
-    "/{id_aula}/reservas",
-    response_model=ReservaAulaListaResponse,
-    tags=["Reservas de aula"],
-    summary="Listar reservas de uma aula específica",
-)
-def listar_reservas_da_aula(
-    id_aula: int = Path(ge=1),
-    status_reserva: reserva_aula_service.FiltroStatus = Query(
-        "Confirmado",
-        alias="status",
-        description="Confirmado (padrão), Cancelado ou Todas",
-    ),
-    escopo: Escopo = Depends(escopo_academia),
-    pag: Paginacao = Depends(get_paginacao),
-    db: Session = Depends(get_db),
-):
-    """Retorna os alunos reservados nesta aula específica (padrão: só 'Confirmado')."""
-    itens, total = reserva_aula_service.listar_reservas(
-        db=db,
-        escopo=reserva_aula_service.Escopo(id_academia=escopo.id_academia),
-        status=status_reserva,
-        fk_id_aula=id_aula,
-        fk_id_aluno=None,
-        data_de=None,
-        data_ate=None,
-        futuras=False,
-        limit=pag.limit,
-        offset=pag.offset,
-    )
-    return ReservaAulaListaResponse(total=total, itens=itens)
