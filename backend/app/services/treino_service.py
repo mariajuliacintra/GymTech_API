@@ -150,6 +150,7 @@ def _resposta(linha, itens: Optional[list[ItemTreinoResponse]]) -> TreinoRespons
         data_criacao=treino.data_criacao,
         data_programada=treino.data_programada,
         status=treino.status,
+        notificado=bool(treino.notificado),
         quantidade_exercicios=quantidade,
         itens=itens,
     )
@@ -313,6 +314,7 @@ def listar_treinos(
     data_ate: Optional[date] = None,
     busca: Optional[str] = None,
     incluir_itens: bool = False,
+    historico: bool = False,
     limit: int = 100,
     offset: int = 0,
 ) -> tuple[list[TreinoResponse], int]:
@@ -339,6 +341,9 @@ def listar_treinos(
     if busca:
         # autoescape: "%" e "_" digitados na busca valem como texto comum
         filtros.append(Treino.titulo_treino.icontains(busca, autoescape=True))
+    
+    if historico:
+        filtros.append(Treino.data_programada < _hoje(db))
 
     total = db.scalar(
         select(func.count(Treino.id_treino))
@@ -349,7 +354,11 @@ def listar_treinos(
     ) or 0
     linhas = db.execute(
         consulta.where(*filtros)
-        .order_by(Treino.data_programada.is_(None), Treino.data_programada, Treino.id_treino)
+        .order_by(
+            Treino.data_programada.desc() if historico else Treino.data_programada.is_(None),
+            Treino.data_programada.desc() if historico else Treino.data_programada,
+            Treino.id_treino.desc() if historico else Treino.id_treino
+        )
         .limit(limit)
         .offset(offset)
     ).all()
@@ -387,6 +396,9 @@ def atualizar_treino(
         )
     if novos_itens is not None:
         _validar_exercicios(db, escopo.id_academia, novos_itens)
+
+    if "data_programada" in campos and campos["data_programada"] != treino.data_programada:
+        treino.notificado = False
 
     for campo, valor in campos.items():
         setattr(treino, campo, valor)

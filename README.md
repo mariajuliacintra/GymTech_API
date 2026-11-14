@@ -1,120 +1,115 @@
-# 🏋️‍♂️ GYMtech - Sistema Integrado para Academias, Profissionais e Alunos
+# 🏋️‍♂️ GYMtech - Sistema Integrado de Gestão Fitness
 
-> 🚧 **Status do Projeto:** Em Desenvolvimento (Em Fase de Construção)
+![Status](https://img.shields.io/badge/Status-Finalizado-success?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi)
+![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql)
 
-O **GYMtech** é uma plataforma centralizada criada para conectar e facilitar a gestão e interação entre **academias**, **profissionais da saúde/fitness** e **alunos**. O ecossistema visa solucionar o ecossistema fragmentado do fitness, unificando objetivos, criação de treinos, agendamento de aulas, biblioteca de exercícios e modos de execução em uma única aplicação.
+O **GYMtech** é uma plataforma Backend RESTful completa e centralizada, desenvolvida para revolucionar a gestão de academias e a interação entre **gestores**, **profissionais da saúde/fitness** e **alunos**. 
 
-## 🎯 Objetivo do Projeto
+O ecossistema resolve a fragmentação do mercado fitness ao unificar, em uma única API de alta performance, a prescrição de treinos, o agendamento inteligente de aulas e avaliações físicas, além de notificações automatizadas.
 
-O objetivo principal do GYMtech é fornecer uma solução de ponta a ponta que atenda às necessidades de todos os atores do ambiente fitness:
+---
 
-1. **Para as Academias:**
+## 🎯 Principais Funcionalidades e Diferenciais
 
-   * Gerenciamento simplificado de unidades, turmas, aulas e dados de frequência.
+O sistema foi arquitetado com separação estrita de escopos (RBAC via JWT) e regras de negócio robustas para garantir integridade e fluidez:
 
-   * Controle centralizado de alunos e profissionais vinculados.
+### 🏢 Para a Academia (Gestão)
+* **Controle Centralizado:** Gestão de alunos e profissionais vinculados à unidade.
+* **Catálogo de Exercícios:** Criação de uma biblioteca unificada de exercícios para padronização.
+* **Administração de Aulas:** Criação de turmas e aulas com limites estritos de capacidade.
+* **Visão Macro:** Monitoramento e reagendamento de avaliações físicas e reservas.
 
-2. **Para os Profissionais (Personal Trainers, Instrutores, Nutricionistas):**
+### 🧑‍⚕️ Para o Profissional (Personal / Avaliador)
+* **Prescrição de Treinos:** Montagem de treinos individualizados com definição de séries, repetições, carga sugerida e tempos de descanso.
+* **Avaliação Física:** Agendamento e preenchimento detalhado de anamnese e métricas corporais (peso, altura, % de gordura, medidas).
+* **Gestão de Turmas:** Visualização em tempo real da lista de alunos confirmados em suas aulas.
 
-   * Ferramentas ágeis para montagem e prescrição de treinos individualizados.
+### 🏃 Para o Aluno
+* **Reserva de Aulas:** Agendamento rápido em aulas coletivas.
+* **Agendamento de Avaliações:** Marcação de horários diretamente com os profissionais, com validação automática de conflitos.
+* **Lembretes Diários:** Recebimento automático de e-mails detalhados contendo o treino do dia.
 
-   * Acompanhamento do progresso, histórico dos alunos e rotinas de exercícios.
+### ⚙️ Engenharia e Diferenciais Técnicos
+* **Controle de Concorrência (Locking):** Proteção contra *overbooking* em aulas usando travas transacionais no banco de dados (`SELECT ... FOR UPDATE`), garantindo que a capacidade máxima nunca seja ultrapassada.
+* **Agendamento de Tarefas (Cron Jobs):** Integração com `APScheduler` para rodar verificações diárias automáticas em segundo plano e disparar e-mails.
+* **Mensageria Rica:** Disparo de e-mails em HTML (via `Jinja2` e SMTP) para validação de contas, redefinição de senhas e lembretes de treinos.
+* **Exclusão em Cascata (Soft & Hard Delete):** Regras inteligentes que cancelam reservas e agendamentos futuros automaticamente caso um usuário seja inativado.
 
-3. **Para os Alunos:**
+---
 
-   * Acesso rápido aos treinos prescritos, guia com modos de execução de exercícios e acompanhamento de seus objetivos pessoais.
-
-   * Interatividade e integração direta com a academia e seus instrutores.
-
-## 🛠️ Tecnologias Utilizadas (Backend)
+## 🛠️ Stack Tecnológica
 
 * **Linguagem:** Python 3.10+
-
-* **Framework Web:** [FastAPI](https://fastapi.tiangolo.com/)
-
+* **Framework Web:** FastAPI
+* **Banco de Dados:** MySQL 8.0+
+* **ORM e Query Builder:** SQLAlchemy
+* **Validação e Serialização:** Pydantic V2
+* **Agendamento de Tarefas (Background):** APScheduler
+* **Templates HTML (E-mails):** Jinja2
+* **Segurança:** PyJWT (Tokens JWT), Passlib (Bcrypt) para hashing de senhas.
 * **Servidor ASGI:** Uvicorn
 
-* **Validação de Dados:** Pydantic / Email-Validator
-
-* **Segurança e Criptografia:** Bcrypt / PyJWT / Passlib
-
-* **Gerenciamento de Ambientes:** Python Dotenv
+---
 
 ## 🚀 Como Rodar o Projeto Localmente
 
 Siga o passo a passo abaixo para configurar e executar a API em seu ambiente de desenvolvimento.
 
 ### 📋 Pré-requisitos
-
-* **Python 3.10+** instalado no sistema.
-
+* **Python 3.10+**
+* **MySQL 8.0+** rodando localmente ou em container (Docker).
 * **Git** para clonar o repositório.
 
-### Step 1: Clonar o Repositório
-
-```
+### 1. Clonar e Preparar o Ambiente
+```bash
 git clone <URL_DO_SEU_REPOSITORIO>
 cd GYMtech/backend
 
-```
+# Criar ambiente virtual
+python -m venv venv
 
-### Step 2: Criar e Ativar o Ambiente Virtual (`venv`)
+# Ativar ambiente virtual (Windows)
+.\venv\Scripts\activate
+# Ativar ambiente virtual (Linux/macOS)
+source venv/bin/activate
 
-* **No Linux / macOS:**
-
-  ```
-  python3 -m venv venv
-  source venv/bin/activate
-  
-  ```
-
-* **No Windows (PowerShell):**
-
-  ```
-  python -m venv venv
-  .\venv\Scripts\Activate.ps1
-  
-  ```
-
-### Step 3: Instalar as Dependências
-
-Com o ambiente virtual ativado, execute:
-
-```
+# Instalar dependências
 pip install -r requirements.txt
-
 ```
 
-### Step 4: Configurar Variáveis de Ambiente
+### 2. Configurar o Banco de Dados
+1. Acesse seu servidor MySQL.
+2. Execute o script SQL principal para criar o banco de dados e as tabelas:
+   * Localizado em: `sql/gymtech.sql`
+   * Caso esteja atualizando de uma versão anterior, verifique também os scripts na pasta `sql/`.
 
-Crie um arquivo `.env` na raiz da pasta `backend` com base no arquivo de exemplo (`.env.example`):
-
-```
+### 3. Variáveis de Ambiente
+Crie um arquivo `.env` na raiz da pasta `backend` fazendo uma cópia do arquivo de exemplo:
+```bash
 cp .env.example .env
-
 ```
+Edite o arquivo `.env` preenchendo as chaves necessárias:
+* `DATABASE_URL`: String de conexão do MySQL (ex: `mysql+pymysql://user:pass@localhost:3306/gymtech`).
+* `SECRET_KEY`: Chave aleatória para assinatura dos tokens JWT.
+* **Configurações SMTP:** (Obrigatório para o envio de e-mails e códigos de verificação).
+* **Configurações de Notificação:** Ajuste horários do Cron Job (`NOTIFICACAO_TREINO_HORA`, etc).
 
-*Edite o arquivo `.env` ajustando a chave secreta JWT e parâmetros de banco de dados conforme necessário.*
-
-### Step 5: Executar o Servidor de Desenvolvimento
-
-Para iniciar o servidor FastAPI com recarregamento automático (*hot-reload*):
-
-```
+### 4. Executar a Aplicação
+Inicie o servidor Uvicorn com recarregamento automático:
+```bash
 uvicorn app.main:app --reload
-
 ```
+A API estará online! 🚀
 
-A API estará disponível no seu navegador ou cliente HTTP em: **`http://127.0.0.1:8000`**
+---
 
-## 📌 Próximos Passos no Desenvolvimento
+## 📚 Documentação da API (Swagger)
 
-* \[ \] Modelagem final dos módulos de Treinos e Exercícios.
+O FastAPI gera a documentação interativa automaticamente. Com o servidor rodando, acesse no seu navegador:
 
-* \[ \] Implementação do módulo de presenças e aulas coletivas.
+* **Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
-* \[ \] Implementação dos módulos de avaliação
-
-* \[ \] Desenvolvimento dos endpoints para monitoramento de execução de treino do aluno.
-
-* \[ \] Implantação da API e do Banco de dados.
+Pelo Swagger UI é possível testar todos os endpoints, realizar login, injetar o token JWT globalmente e simular o fluxo completo da aplicação.

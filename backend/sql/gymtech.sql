@@ -103,6 +103,7 @@ CREATE TABLE treino (
     data_criacao       DATE         NOT NULL DEFAULT (CURRENT_DATE),
     data_programada    DATE         NULL,
     status             ENUM('Ativo', 'Cancelado') NOT NULL DEFAULT 'Ativo',
+    notificado         TINYINT(1)   NOT NULL DEFAULT 0,
 
     CONSTRAINT pk_treino PRIMARY KEY (id_treino),
     CONSTRAINT fk_treino_aluno

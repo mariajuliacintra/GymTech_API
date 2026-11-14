@@ -97,6 +97,28 @@ def listar_treinos_profissional(
 
 
 @router.get(
+    "/profissionais/me/treinos/historico",
+    response_model=TreinoListaResponse,
+    summary="Histórico dos meus treinos (profissional)",
+)
+def historico_treinos_profissional(
+    fk_id_aluno: Optional[int] = Query(None, ge=1, description="Só histórico deste aluno"),
+    filtros: FiltrosTreino = Depends(get_filtros_treino),
+    escopo: Escopo = Depends(escopo_profissional),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Treinos passados em que o profissional logado é o responsável (mais recentes primeiro)."""
+    itens, total = treino_service.listar_treinos(
+        db, escopo, filtros.status, fk_id_aluno, None,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        historico=True,
+        limit=pag.limit, offset=pag.offset,
+    )
+    return TreinoListaResponse(total=total, itens=itens)
+
+
+@router.get(
     "/profissionais/me/treinos/{id_treino}",
     response_model=TreinoDetalheResponse,
     summary="Ver um dos meus treinos (profissional)",
@@ -161,6 +183,27 @@ def listar_treinos_aluno(
         db, escopo, filtros.status, None, None,
         filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
         pag.limit, pag.offset,
+    )
+    return TreinoListaResponse(total=total, itens=itens)
+
+
+@router.get(
+    "/alunos/me/treinos/historico",
+    response_model=TreinoListaResponse,
+    summary="Histórico dos meus treinos (aluno)",
+)
+def historico_treinos_aluno(
+    filtros: FiltrosTreino = Depends(get_filtros_treino),
+    escopo: Escopo = Depends(escopo_aluno),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Histórico de treinos do aluno logado que já passaram da data programada (mais recentes primeiro)."""
+    itens, total = treino_service.listar_treinos(
+        db, escopo, filtros.status, None, None,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        historico=True,
+        limit=pag.limit, offset=pag.offset,
     )
     return TreinoListaResponse(total=total, itens=itens)
 

@@ -1,11 +1,12 @@
 """
 Treinos, visão da ACADEMIA (token de academia): alcança todos os treinos dela.
 
-    POST   /treinos                 cadastrar (escolhe aluno e profissional)
-    GET    /treinos                 listar
-    GET    /treinos/{id_treino}     ver um
-    PATCH  /treinos/{id_treino}     atualizar (título, data, profissional, exercícios)
-    DELETE /treinos/{id_treino}     cancelar (status 'Cancelado'; nada é apagado)
+    POST   /treinos                      cadastrar (escolhe aluno e profissional)
+    POST   /treinos/notificar-proximos   disparar lembretes por e-mail para treinos próximos
+    GET    /treinos                      listar
+    GET    /treinos/{id_treino}          ver um
+    PATCH  /treinos/{id_treino}          atualizar (título, data, profissional, exercícios)
+    DELETE /treinos/{id_treino}          cancelar (status 'Cancelado'; nada é apagado)
 
 Profissionais e alunos usam as rotas de meus_treinos.py.
 """
@@ -20,6 +21,7 @@ from app.core.dependencies import Paginacao, get_academia_atual, get_paginacao
 from app.database import get_db
 from app.models import Academia
 from app.schemas.treino import (
+    NotificacaoTreinoExecucaoResponse,
     TreinoCadastroResponse,
     TreinoCancelamentoResponse,
     TreinoCreate,
@@ -28,7 +30,7 @@ from app.schemas.treino import (
     TreinoUpdate,
     TreinoUpdateResponse,
 )
-from app.services import treino_service
+from app.services import notificacao_service, treino_service
 from app.services.treino_service import Escopo, FiltroStatus
 
 router = APIRouter(prefix="/treinos", tags=["Treinos"])
@@ -44,7 +46,7 @@ class FiltrosTreino:
 
 
 def get_filtros_treino(
-    status_treino: FiltroStatus = Query("Ativo", alias="status", description="Ativo (padrão), Cancelado ou Todos"),
+    status_treino: FiltroStatus = Query("Ativo", alias="status", description="Ativo (padrão), Cancelado ou Todas"),
     data_de: Optional[date] = Query(None, description="Data programada a partir de (AAAA-MM-DD)"),
     data_ate: Optional[date] = Query(None, description="Data programada até (AAAA-MM-DD)"),
     busca: Optional[str] = Query(None, min_length=1, max_length=100, description="Parte do título do treino"),
@@ -86,6 +88,36 @@ def cadastrar_treino(
     return TreinoCadastroResponse(**treino.model_dump())
 
 
+@router.post(
+    "/notificar-proximos",
+    response_model=NotificacaoTreinoExecucaoResponse,
+    summary="Disparar notificações de treinos próximos (academia)",
+)
+def notificar_treinos_proximos(
+    dias_antecedencia: Optional[int] = Query(
+        None,
+        ge=0,
+        le=30,
+        description="Janela em dias à frente (padrão: NOTIFICACAO_TREINO_DIAS_ANTECEDENCIA do .env)",
+    ),
+    escopo: Escopo = Depends(escopo_academia),
+    db: Session = Depends(get_db),
+):
+    """
+    Executa sob demanda o envio de e-mails de lembrete para os alunos da
+    academia logada que têm treinos ativos programados nos próximos dias
+    e ainda não foram notificados (`notificado = false`).
+
+    Além desta rota manual, o agendador automático executa esta mesma
+    rotina todos os dias no horário configurado no `.env` (padrão: 08:00).
+    """
+    return notificacao_service.processar_lembretes_treinos(
+        db,
+        id_academia=escopo.id_academia,
+        dias_antecedencia=dias_antecedencia,
+    )
+
+
 @router.get("", response_model=TreinoListaResponse, summary="Listar treinos")
 def listar_treinos(
     fk_id_aluno: Optional[int] = Query(None, ge=1, description="Só treinos deste aluno"),
@@ -103,6 +135,25 @@ def listar_treinos(
         db, escopo, filtros.status, fk_id_aluno, fk_id_profissional,
         filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
         pag.limit, pag.offset,
+    )
+    return TreinoListaResponse(total=total, itens=itens)
+
+
+@router.get("/historico", response_model=TreinoListaResponse, summary="Histórico de treinos (academia)")
+def historico_treinos(
+    fk_id_aluno: Optional[int] = Query(None, ge=1, description="Só histórico deste aluno"),
+    fk_id_profissional: Optional[int] = Query(None, ge=1, description="Só histórico deste profissional"),
+    filtros: FiltrosTreino = Depends(get_filtros_treino),
+    escopo: Escopo = Depends(escopo_academia),
+    pag: Paginacao = Depends(get_paginacao),
+    db: Session = Depends(get_db),
+):
+    """Histórico geral da academia (treinos passados)."""
+    itens, total = treino_service.listar_treinos(
+        db, escopo, filtros.status, fk_id_aluno, fk_id_profissional,
+        filtros.data_de, filtros.data_ate, filtros.busca, filtros.incluir_itens,
+        historico=True,
+        limit=pag.limit, offset=pag.offset,
     )
     return TreinoListaResponse(total=total, itens=itens)
 

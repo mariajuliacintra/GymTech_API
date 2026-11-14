@@ -137,6 +137,7 @@ class TreinoResponse(BaseModel):
     data_criacao: date
     data_programada: Optional[date]
     status: str
+    notificado: bool
     quantidade_exercicios: int
     # null nas listagens (a menos que ?incluir_itens=true); sempre preenchido nas demais respostas
     itens: Optional[list[ItemTreinoResponse]] = None
@@ -162,3 +163,25 @@ class TreinoListaResponse(BaseModel):
     mensagem: str = "Treinos listados com sucesso!"
     total: int  # total que bate com o filtro (não só desta página)
     itens: list[TreinoResponse]
+
+
+class NotificacaoTreinoItemResponse(BaseModel):
+    id_treino: int
+    titulo_treino: str
+    data_programada: date
+    fk_id_aluno: int
+    nome_aluno: str
+    email_aluno: str
+    enviado: bool
+    erro: Optional[str] = None
+
+
+class NotificacaoTreinoExecucaoResponse(BaseModel):
+    mensagem: str
+    data_referencia: date
+    data_limite: date
+    dias_antecedencia: int
+    verificados: int
+    enviados: int
+    falhas: int
+    itens: list[NotificacaoTreinoItemResponse]

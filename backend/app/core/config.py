@@ -53,6 +53,14 @@ class Settings:
     SMTP_FROM: str = os.getenv("SMTP_FROM", "")  # se vazio, usa o SMTP_USER
     SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 
+    # Notificação diária de treinos próximos (agendador automático).
+    NOTIFICACAO_TREINO_ATIVO: bool = os.getenv("NOTIFICACAO_TREINO_ATIVO", "true").lower() == "true"
+    NOTIFICACAO_TREINO_HORA: int = int(os.getenv("NOTIFICACAO_TREINO_HORA", "8"))
+    NOTIFICACAO_TREINO_MINUTO: int = int(os.getenv("NOTIFICACAO_TREINO_MINUTO", "0"))
+    NOTIFICACAO_TREINO_DIAS_ANTECEDENCIA: int = int(
+        os.getenv("NOTIFICACAO_TREINO_DIAS_ANTECEDENCIA", "1")
+    )
+
 
 settings = Settings()
 

@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Date, Enum, ForeignKey, String, text
+from sqlalchemy import Boolean, CheckConstraint, Date, Enum, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -9,7 +9,7 @@ from app.database import Base
 
 class Treino(Base):
     """
-    Treino de um aluno, montado por um profissional (script SQL do projeto + coluna status).
+    Treino de um aluno, montado por um profissional (script SQL do projeto + colunas status e notificado).
 
     fk_id_aluno e fk_id_profissional guardam, cada um, o id_usuario de uma
     pessoa da tabela `usuario`. Para mostrar o nome dos dois, as consultas
@@ -19,6 +19,7 @@ class Treino(Base):
     envolvidos, e a API garante que os dois sejam da mesma academia.
 
     "Cancelar" é mudar status para 'Cancelado' (nada é apagado).
+    `notificado` evita que o agendador diário envie o mesmo lembrete duas vezes.
     """
 
     __tablename__ = "treino"
@@ -37,4 +38,7 @@ class Treino(Base):
     data_programada: Mapped[Optional[date]] = mapped_column(Date)
     status: Mapped[str] = mapped_column(
         Enum("Ativo", "Cancelado", name="status_treino"), server_default="Ativo"
+    )
+    notificado: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0")
     )
