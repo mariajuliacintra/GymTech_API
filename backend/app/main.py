@@ -6,6 +6,7 @@ Para rodar (dentro da pasta backend, com a venv ativada):
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (registra todas as tabelas)
 from app.core.config import settings
@@ -44,10 +45,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins= [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
+origins = [
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
 ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 register_exception_handlers(app)
 
